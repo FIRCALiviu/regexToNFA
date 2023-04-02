@@ -84,7 +84,7 @@ class nfa: # "#" is the symbol for lamda and @ for the empty set
                 new[first_state+M][edge]=[final_state+M for final_state in x.delta[first_state][edge]]
         for final_state in self.final_states:
             if new.delta.get(final_state) is None:
-                new.delta[final_state]={"#":x.initial_state+M}
+                new.delta[final_state]={"#":[x.initial_state+M]}
             elif new.delta[final_state].get('#') is None:
                 new.delta[final_state]['#']=[x.initial_state+M]
             else:
@@ -104,7 +104,12 @@ class nfa: # "#" is the symbol for lamda and @ for the empty set
         M=max(self.states)+1
         new.initial_state=M
         for state in self.final_states:
-            new.delta[state]={"#":[M]}
+            if new.delta.get(state) is None:
+                new.delta[state]={'#':[M]}
+            elif new.delta[state].get("#") is None:
+                new.delta[state]['#']=[M]
+            else:
+                new.delta[state]['#'].append(M)
         new.delta[M]={'#':[self.initial_state]}
         new.final_states.append(M)
         new.states.append(M)
@@ -128,9 +133,7 @@ class evaluator:
                 tokens.append("nfa('{}')".format(char))
             else:
                 tokens.append(char)
-        for i,char in enumerate(tokens):
-            if char=="~":
-                tokens[i],tokens[i-1]=tokens[i-1],tokens[i]
+        
 
         return eval("".join(tokens))
         
@@ -142,9 +145,7 @@ class evaluator:
         for i,token in enumerate(tokens):
             if token not in "()~+*":
                 tokens[i]="nfa('{}')".format(token)
-        for i,token in enumerate(tokens):
-            if token=="~":
-                tokens[i],tokens[i-1]=tokens[i-1],tokens[i]
+        
         return eval("".join(tokens))
 
 
@@ -158,5 +159,5 @@ class evaluator:
         
 if __name__ == "__main__":
     a,b=nfa("a"),nfa("b")
-    print(~a*~b)
+    print(~a*a)
     
