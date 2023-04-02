@@ -83,7 +83,13 @@ class nfa: # "#" is the symbol for lamda and @ for the empty set
             for edge in x.delta[first_state]:
                 new[first_state+M][edge]=[final_state+M for final_state in x.delta[first_state][edge]]
         for final_state in self.final_states:
-            new.delta[final_state]={"#":x.initial_state+M}
+            if new.delta.get(final_state) is None:
+                new.delta[final_state]={"#":x.initial_state+M}
+            elif new.delta[final_state].get('#') is None:
+                new.delta[final_state]['#']=[x.initial_state+M]
+            else:
+                new.delta[final_state]['#'].append(x.initial_state+M)
+                
         new.initial_state=self.initial_state
         new.final_states=[final_state+M for final_state in x.final_states]
         new.states.extend(self.states)
@@ -103,10 +109,54 @@ class nfa: # "#" is the symbol for lamda and @ for the empty set
         new.final_states.append(M)
         new.states.append(M)
         return new
+class evaluator:
+    def __init__(self,message):
+        if message.lower()=="n":
+            self.split=False
+        elif message.lower()=="y":
+            self.split=True
+        else:
+            raise ValueError
+    @staticmethod
+    def __evalnosplit(message):
+        message=message.replace(" ","")
+        message=message.replace("*","~")
+        message=message.replace(".","*")
+        tokens=[]
+        for char in message:
+            if char.isalpha() or char =='@' or char == '#':
+                tokens.append("nfa('{}')".format(char))
+            else:
+                tokens.append(char)
+        for i,char in enumerate(tokens):
+            if char=="~":
+                tokens[i],tokens[i-1]=tokens[i-1],tokens[i]
 
-a,b=nfa(),nfa()
-a.update("a")
-b.update("b")
+        return eval("".join(tokens))
+        
+    @staticmethod
+    def __evalWsplit(message):
+        message=message.replace("*","~")
+        message=message.replace(".","*")
+        tokens=message.split()
+        for i,token in enumerate(tokens):
+            if token not in "()~+*":
+                tokens[i]="nfa('{}')".format(token)
+        for i,token in enumerate(tokens):
+            if token=="~":
+                tokens[i],tokens[i-1]=tokens[i-1],tokens[i]
+        return eval("".join(tokens))
 
-print(eval("nfa('a')+~nfa('@')"))
-################## to do: initial state is not included in states list
+
+    
+    def eval(self,s):
+        if self.split==False:
+            return evaluator.__evalnosplit(s)
+        else:
+            return evaluator.__evalWsplit(s)
+
+        
+if __name__ == "__main__":
+    a,b=nfa("a"),nfa("b")
+    print(~a*~b)
+    
